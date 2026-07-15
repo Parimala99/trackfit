@@ -10,21 +10,60 @@ export default function LogWorkout({ session, onSaved }) {
   const [draft, setDraft] = useState([]) // sets queued for this session
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [showCustomForm, setShowCustomForm] = useState(false)
+  const [customName, setCustomName] = useState('')
+  const [customGroup, setCustomGroup] = useState('')
+  const [customSaving, setCustomSaving] = useState(false)
+  const [customError, setCustomError] = useState(null)
 
-  useEffect(() => {
-    supabase
+  function fetchExercises() {
+    return supabase
       .from('exercises')
       .select('id, name, muscle_group')
       .order('is_default', { ascending: false })
       .order('name')
-      .then(({ data, error }) => {
-        if (error) setError(error.message)
-        else {
-          setExercises(data)
-          if (data.length) setExerciseId(String(data[0].id))
-        }
-      })
+  }
+
+  useEffect(() => {
+    fetchExercises().then(({ data, error }) => {
+      if (error) setError(error.message)
+      else {
+        setExercises(data)
+        if (data.length) setExerciseId(String(data[0].id))
+      }
+    })
   }, [])
+
+  async function addCustomExercise(e) {
+    e.preventDefault()
+    if (!customName.trim()) return
+    setCustomSaving(true)
+    setCustomError(null)
+    const { data, error } = await supabase
+      .from('exercises')
+      .insert({
+        name: customName.trim(),
+        muscle_group: customGroup.trim() || null,
+        is_default: false,
+        created_by: session.user.id
+      })
+      .select()
+      .single()
+    if (error) {
+      setCustomError(error.message)
+      setCustomSaving(false)
+      return
+    }
+    const { data: all } = await fetchExercises()
+    if (all) {
+      setExercises(all)
+      setExerciseId(String(data.id))
+    }
+    setCustomName('')
+    setCustomGroup('')
+    setCustomSaving(false)
+    setShowCustomForm(false)
+  }
 
   function addSet(e) {
     e.preventDefault()
@@ -105,6 +144,16 @@ export default function LogWorkout({ session, onSaved }) {
                 </option>
               ))}
             </select>
+            <div style={{ marginTop: 4, textAlign: 'right' }}>
+              <button
+                type="button"
+                className="signout"
+                style={{ fontSize: 12, padding: '4px 0' }}
+                onClick={() => setShowCustomForm((v) => !v)}
+              >
+                {showCustomForm ? 'Cancel' : '+ Add your own'}
+              </button>
+            </div>
           </div>
           <div className="field row2">
             <div>
@@ -128,6 +177,36 @@ export default function LogWorkout({ session, onSaved }) {
             </button>
           </div>
         </form>
+
+        {showCustomForm && (
+          <form onSubmit={addCustomExercise} style={{ marginTop: 12 }}>
+            <div className="field">
+              <label htmlFor="custom-name">Exercise name</label>
+              <input
+                id="custom-name"
+                required
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="e.g. Cable Fly"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="custom-group">Muscle group (optional)</label>
+              <input
+                id="custom-group"
+                value={customGroup}
+                onChange={(e) => setCustomGroup(e.target.value)}
+                placeholder="e.g. Chest"
+              />
+            </div>
+            <div className="field">
+              <button type="submit" className="ghost" disabled={customSaving} style={{ width: '100%' }}>
+                {customSaving ? 'Adding…' : 'Add exercise'}
+              </button>
+            </div>
+            {customError && <p className="error">{customError}</p>}
+          </form>
+        )}
 
         {draft.map((s, i) => (
           <div className="set-chip num" key={i}>

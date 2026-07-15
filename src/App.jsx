@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabaseClient'
 import Auth from './components/Auth'
 import LogWorkout from './components/LogWorkout'
-import WeeklyView from './components/WeeklyView'
+import Dashboard from './components/Dashboard'
 import Feed from './components/Feed'
 
 export default function App() {
@@ -41,7 +41,7 @@ export default function App() {
       </header>
 
       <main className="content">
-        {tab === 'week' && <WeeklyView session={session} refreshKey={refreshKey} />}
+        {tab === 'week' && <Dashboard session={session} refreshKey={refreshKey} />}
         {tab === 'log' && <LogWorkout session={session} onSaved={handleSaved} />}
         {tab === 'feed' && <Feed refreshKey={refreshKey} />}
       </main>
@@ -50,7 +50,7 @@ export default function App() {
 
       <nav className="tabbar">
         <button aria-current={tab === 'week'} onClick={() => setTab('week')}>
-          <span className="dot">▤</span> Week
+          <span className="dot">▤</span> This week
         </button>
         <button aria-current={tab === 'log'} onClick={() => setTab('log')}>
           <span className="dot">＋</span> Log

@@ -26,7 +26,7 @@ create table if not exists public.exercises (
 -- A single training session.
 create table if not exists public.workouts (
   id          bigint generated always as identity primary key,
-  user_id     uuid not null references auth.users (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete cascade,
   date        date not null default current_date,
   notes       text,
   created_at  timestamptz not null default now()
